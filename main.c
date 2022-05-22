@@ -40,6 +40,14 @@ create_sphere(float center_x,
     return s;
 }
 
+uint32_t min(uint32_t a, uint32_t b)
+{
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
 
 uint32_t
 get_idx_of_first_intersection(sphere **spheres,
@@ -65,9 +73,9 @@ get_idx_of_first_intersection(sphere **spheres,
             ray_start.z - sphere->center.z,
         };
         float a = 1;
-        float b = -2*(ray_x_norm * vec_to_center.x +
-                      ray_y_norm * vec_to_center.y +
-                      ray_z_norm * vec_to_center.z);
+        float b = 2*(ray_x_norm * vec_to_center.x +
+                     ray_y_norm * vec_to_center.y +
+                     ray_z_norm * vec_to_center.z);
         float c = (vec_to_center.x * vec_to_center.x +
                    vec_to_center.y * vec_to_center.y +
                    vec_to_center.z * vec_to_center.z -
@@ -78,19 +86,19 @@ get_idx_of_first_intersection(sphere **spheres,
         }
         float x1 = (-b - sqrt(discriminant))/(2*a);
         float x2 = (-b + sqrt(discriminant))/(2*a);
-        if (x1 > 0 && x1 < min_dist){
+        if (x1 > 0.1 && x1 < min_dist){
             min_dist = x1;
             winner_idx = sphere_idx;
-            *intersection = {
+            *intersection = (vector){
                 ray_start.x + x1 * ray_x_norm,
                 ray_start.y + x1 * ray_y_norm,
                 ray_start.z + x1 * ray_z_norm,
             };
         }
-        else if (x2 > 0 && x2 < min_dist){ // x2 must be > x1!
+        else if (x2 > 0.1 && x2 < min_dist){ // x2 must be > x1!
             min_dist = x2;
             winner_idx = sphere_idx;
-            *intersection = {
+            *intersection = (vector){
                 ray_start.x + x2 * ray_x_norm,
                 ray_start.y + x2 * ray_y_norm,
                 ray_start.z + x2 * ray_z_norm,
@@ -142,12 +150,16 @@ trace(sphere **spheres,
 
             if (winner_sphere_idx < num_spheres) {
                 // intersecting sphere found
+                sphere *winner_sphere = spheres[winner_sphere_idx];
 
                 // only intersection color
-                // canvas[i + j * num_pixels_x] = spheres[winner_sphere_idx]->color;
+                //canvas[i + j * num_pixels_x] = winner_sphere->color;
 
                 // hard shadows
                 uint32_t color = 0;
+                if (sphere_is_light[winner_sphere_idx]){
+                    color = cram_rgb(255,255,255);
+                }
                 for (uint32_t sphere_idx = 0; sphere_idx < num_spheres; sphere_idx++){
                     if (sphere_is_light[sphere_idx]){
                         vector light_ray_dir = {
@@ -165,11 +177,42 @@ trace(sphere **spheres,
                         assert(blocker_idx < num_spheres);
                         if (blocker_idx == sphere_idx) {
                             // no object blocking the light source
-                            // TODO
+                            vector normal_at_intersection = {
+                                intersection.x - winner_sphere->center.x,
+                                intersection.y - winner_sphere->center.y,
+                                intersection.z - winner_sphere->center.z,
+                            };
+                            float cos_of_light_impact =
+                                (normal_at_intersection.x * light_ray_dir.x +
+                                 normal_at_intersection.y * light_ray_dir.y +
+                                 normal_at_intersection.z * light_ray_dir.z) /
+                                (sqrt(normal_at_intersection.x * normal_at_intersection.x +
+                                      normal_at_intersection.y * normal_at_intersection.y +
+                                      normal_at_intersection.z * normal_at_intersection.z) *
+                                 sqrt(light_ray_dir.x * light_ray_dir.x +
+                                      light_ray_dir.y * light_ray_dir.y +
+                                      light_ray_dir.z * light_ray_dir.z));
+                            if (cos_of_light_impact < 0) {
+                                cos_of_light_impact = 0;
+                            }
+                            uint32_t new_r = min(255,
+                                                 (uint32_t) uncram_rgb(color, 'r') +
+                                                 cos_of_light_impact *
+                                                 uncram_rgb(winner_sphere->color, 'r'));
+                            uint32_t new_g = min(255,
+                                                 (uint32_t) uncram_rgb(color, 'g') +
+                                                 cos_of_light_impact *
+                                                 uncram_rgb(winner_sphere->color, 'g'));
+                            uint32_t new_b = min(255,
+                                                 (uint32_t) uncram_rgb(color, 'b') +
+                                                 cos_of_light_impact *
+                                                 uncram_rgb(winner_sphere->color, 'b'));
                             
+                            color = cram_rgb(new_r, new_g, new_b);
                         }
                     }
                 }
+                canvas[i + j * num_pixels_x] = color;
             }
         }
     }
@@ -183,17 +226,20 @@ main()
     uint32_t num_pixels_z = 500;
     uint32_t *canvas = (uint32_t *) malloc(num_pixels_x * num_pixels_z * sizeof(uint32_t));
     sphere *spheres[] = {
-        create_sphere(0, 1000, 0, 985, cram_rgb(180,180,180)),
-        create_sphere(1000, 10, 0, 995, cram_rgb(0,100,220)),
-        create_sphere(-1000, 10, 0, 995, cram_rgb(220,100,0)),
+        create_sphere(0, 1000, 0, 975, cram_rgb(180,180,180)),
+        create_sphere(1000, 10, 0, 992, cram_rgb(0,100,220)),
+        create_sphere(-1000, 10, 0, 992, cram_rgb(220,100,0)),
         create_sphere(0, 10, 1000, 995, cram_rgb(130,130,130)),
         create_sphere(0, 10, -1000, 995, cram_rgb(130,130,130)),
-        create_sphere(-2, 12, 3, 2, cram_rgb(200,200,200)),
+        create_sphere(-2, 20, 3, 2, cram_rgb(200,200,200)),
         create_sphere(3, 10, 3, 2, cram_rgb(200,200,200)),
-        create_sphere(0, 12, -5, 2, cram_rgb(255,255,255)),
+        create_sphere(0, 12, -4, 1, cram_rgb(255,255,255)),
     };
-    
+    bool sphere_is_light[] = {
+        false, false, false, false, false, false, false, true
+    };
     trace(spheres,
+          sphere_is_light,
           8,
           -3.0,
           3.0,
