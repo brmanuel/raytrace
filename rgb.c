@@ -28,3 +28,32 @@ uncram_rgb(uint32_t rgb,
         return -1;        
     }
 }
+
+
+
+static uint32_t
+min(uint32_t a, uint32_t b)
+{
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+
+uint32_t
+add_crammed_rgb(uint32_t color1,
+                uint32_t color2)
+{
+    uint32_t new_r = min(255,
+                         (uint32_t) uncram_rgb(color1, 'r') +
+                         (uint32_t) uncram_rgb(color2, 'r'));
+    uint32_t new_g = min(255,
+                         (uint32_t) uncram_rgb(color1, 'g') +
+                         (uint32_t) uncram_rgb(color2, 'g'));
+    uint32_t new_b = min(255,
+                         (uint32_t) uncram_rgb(color1, 'b') +
+                         (uint32_t) uncram_rgb(color2, 'b'));
+    return cram_rgb(new_r, new_g, new_b);
+
+}
