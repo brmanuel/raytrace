@@ -67,9 +67,9 @@ save_png_to_file (uint32_t *canvas,
     
     /* Initialize rows of PNG. */
 
-    row_pointers = png_malloc (png_ptr, canvas_height * sizeof (png_byte *));
+    row_pointers = (png_byte **) png_malloc (png_ptr, canvas_height * sizeof (png_byte *));
     for (y = 0; y < canvas_height; y++) {
-        png_byte *row = png_malloc (png_ptr, sizeof (uint8_t) * canvas_width * pixel_size);
+        png_byte *row = (png_byte *) png_malloc (png_ptr, sizeof (uint8_t) * canvas_width * pixel_size);
         row_pointers[y] = row;
         for (x = 0; x < canvas_width; x++) {
             *row++ = uncram_rgb(canvas[x + y * canvas_width], 'r');
@@ -93,5 +93,5 @@ save_png_to_file (uint32_t *canvas,
         png_free (png_ptr, row_pointers[y]);
     }
     png_free (png_ptr, row_pointers);
-    
+    return status;
 }

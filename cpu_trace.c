@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <float.h>
 #include <assert.h>
-#include <stdbool.h>
 
 
 #include "include/cpu_trace.h"
@@ -103,7 +102,6 @@ get_idx_of_first_intersection(sphere **spheres,
 
 void
 cpu_trace(sphere **spheres,
-          bool *sphere_is_light,
           uint32_t num_spheres,
           float canvas_min_x,
           float canvas_max_x,
@@ -149,11 +147,11 @@ cpu_trace(sphere **spheres,
 
                 // hard shadows
                 uint32_t color = 0;
-                if (sphere_is_light[winner_sphere_idx]){
+                if (winner_sphere->is_light){
                     color = cram_rgb(255,255,255);
                 }
                 for (uint32_t sphere_idx = 0; sphere_idx < num_spheres; sphere_idx++){
-                    if (sphere_is_light[sphere_idx]){
+                    if (spheres[sphere_idx]->is_light){
                         vector light_ray_dir = {
                             spheres[sphere_idx]->center.x - intersection.x,
                             spheres[sphere_idx]->center.y - intersection.y,

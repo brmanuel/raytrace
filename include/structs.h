@@ -1,4 +1,5 @@
 #pragma once
+#include <stdbool.h>
 
 
 /* a 3d vector */
@@ -12,5 +13,6 @@ typedef struct _vector {
 typedef struct _sphere {
     vector center;
     float radius;
-    uint32_t color; // RGB as ________RRRRRRRRGGGGGGGGBBBBBBBB 
+    uint32_t color; // RGB as ________RRRRRRRRGGGGGGGGBBBBBBBB
+    bool is_light;
 } sphere;
