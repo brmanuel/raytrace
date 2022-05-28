@@ -9,6 +9,21 @@
 
 #include "include/gpu_trace.hu"
 
+/*
+  Error handling helpers
+ */
+#define gpu_err_check(ans) { gpu_assert((ans), __FILE__, __LINE__); }
+
+
+inline void
+gpu_assert(cudaError_t code, const char *file, int line)
+{
+   if (code != cudaSuccess) 
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      exit(code);
+   }
+}
 
 __host__ __device__ uint32_t
 get_idx_of_first_intersection(sphere *spheres,
@@ -91,7 +106,7 @@ cuda_trace_kernel(sphere *spheres,
     while (thread_index < num_pixels_x * num_pixels_z) {
 
         // initialize canvas to black
-        canvas[thread_index] = 0;
+        canvas[thread_index] = 67108863;
 
         vector zero_vec = {0.0,0.0,0.0};
         float canvas_width = canvas_max_x - canvas_min_x;
@@ -159,18 +174,18 @@ void gpu_trace(sphere **spheres,
     // Allocate GPU memory for the spheres and copy them over
     // TODO: use constant memory for the spheres
     sphere *gpu_spheres;
-    cudaMalloc((void **) &gpu_spheres, sizeof(sphere) * num_spheres);
+    gpu_err_check(cudaMalloc((void **) &gpu_spheres, sizeof(sphere) * num_spheres));
     for (int i = 0; i < num_spheres; i++){
-        cudaMemcpy(gpu_spheres,
-                   spheres[i],
-                   sizeof(sphere),
-                   cudaMemcpyHostToDevice);
+        gpu_err_check(cudaMemcpy(&gpu_spheres[i],
+                                 spheres[i],
+                                 sizeof(sphere),
+                                 cudaMemcpyHostToDevice));
     }
     
     // Allocate GPU memory for the canvas
     uint32_t *gpu_canvas;
-    cudaMalloc((void **) &gpu_canvas,
-               sizeof(uint32_t) * num_pixels_x * num_pixels_z);
+    gpu_err_check(cudaMalloc((void **) &gpu_canvas,
+                             sizeof(uint32_t) * num_pixels_x * num_pixels_z));
 
     
     // Call the kernel using one thread per pixel
@@ -194,17 +209,15 @@ void gpu_trace(sphere **spheres,
            
    
     // Check for errors on kernel call
-    cudaError err = cudaGetLastError();
-    if (cudaSuccess != err)
-        fprintf(stderr, "Error %s\n", cudaGetErrorString(err));
-    else
-        fprintf(stderr, "No kernel error detected\n");
+    gpu_err_check(cudaGetLastError());
 
     // Copy the canvas back to host memory
-    cudaMemcpy(canvas, gpu_canvas, sizeof(uint32_t) * num_spheres,
-               cudaMemcpyDeviceToHost);
+    gpu_err_check(cudaMemcpy(canvas,
+                             gpu_canvas,
+                             sizeof(uint32_t) * num_pixels_x * num_pixels_z,
+                             cudaMemcpyDeviceToHost));
 
     // Free the gpu resources
-    cudaFree(gpu_canvas);
-    cudaFree(gpu_spheres);
+    gpu_err_check(cudaFree(gpu_canvas));
+    gpu_err_check(cudaFree(gpu_spheres));
 }

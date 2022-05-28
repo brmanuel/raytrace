@@ -1,3 +1,6 @@
+_DEPS = rgb.h write_image.h structs.h cpu_trace.h tsc_x86.h
+_OBJ = main.c.o write_image.c.o rgb.c.o cpu_trace.c.o
+_CUDA_OBJ = gpu_trace.cu.o
 
 
 # CUDA Compiler and Flags
@@ -27,16 +30,12 @@ CFLAGS=-g -Wall -D_REENTRANT -std=c++0x -pthread
 INCLUDE = -I$(IDIR) -I$(CUDA_INC_PATH)
 LIBS=-lm -lpng -L$(CUDA_LIB_PATH) -lcudart -lcufft
 
-_DEPS = rgb.h write_image.h structs.h cpu_trace.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 ODIR = obj
-_OBJ = main.c.o write_image.c.o rgb.c.o cpu_trace.c.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_CUDA_OBJ = gpu_trace.cu.o
 CUDA_OBJ = $(patsubst %,$(ODIR)/%,$(_CUDA_OBJ))
-
 
 
 
