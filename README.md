@@ -59,3 +59,5 @@ Example images, tracking versions. These mimick the example at [wikipedia](https
 - raytracer extensions:
   - support triangles as shapes
   - depth of field by simulating a lense
+  - optimization of intersection test: aggregating objects hierarchically
+  - full path tracing: sample the render equation
